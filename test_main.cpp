@@ -9,6 +9,7 @@
 #include "../guess_img/include/blocked_guess.hpp"
 #include "../modify_guess_image/modify_guess_image.hpp"
 #include "../calc_exchange/include/simple_calc_exchange.hpp"
+#include "../utils/include/image.hpp"
 #include "../utils/include/dwrite.hpp"
 #include "../utils/include/exception.hpp"
 
@@ -26,7 +27,7 @@ T readFrom(S& stream)
 
 void appMain(std::string const & usrName, std::string const & passwd)
 {
-	utils::write("Problem number ----- ");
+    utils::write("Problem number ----- ");
     const unsigned int pId = readFrom<unsigned int>(std::cin);
     auto p_opt = inout::get_problem_from_test_server(pId);
 
@@ -43,40 +44,45 @@ void appMain(std::string const & usrName, std::string const & passwd)
     };
 
 
-	const auto select_cost = pb.select_cost();
-	const auto change_cost = pb.change_cost();
-	const auto max_select_times = pb.max_select_times();
+    const auto select_cost = pb.select_cost();
+    const auto change_cost = pb.change_cost();
+    const auto max_select_times = pb.max_select_times();
 
 
     auto idxs = blocked_guess::guess(pb, pred);
     auto after = modify::modify_guess_image(idxs, pb,
         [=](std::vector<std::vector<utils::ImageID>> const & imgMap)
         {
-            auto ss = simple_calc_exchange::simple_calc_exchange(idxs, select_cost, change_cost, max_select_times);
+            for (auto& ee : imgMap){
+                utils::writeln(ee);
+            }
+
+
+            auto ss = simple_calc_exchange::simple_calc_exchange(imgMap, select_cost, change_cost, max_select_times);
             std::stringstream text;
             for(auto& e: ss){
                 text << e;
                 text << "\r\n";     // std::endlじゃなくて\r\n
             }
-			utils::writeln(text.str());
+            utils::writeln(text.str());
 
-			PROCON_ENFORCE(inout::send_result_to_test_server(pId, usrName, passwd, text.str()), "Fail: sending an answer");
+            PROCON_ENFORCE(inout::send_result_to_test_server(pId, usrName, passwd, text.str()), "Fail: sending an answer");
         });
 }
 
 
 int main()
 {
-	const auto username = "k3kaimu";
-	const auto password = "k3foobar";
+    const auto username = "k3kaimu";
+    const auto password = "k3foobar";
 
     while(1){
-		try{
-			appMain(username, password);
-		}
-		catch (std::exception& ex){
-			utils::writeln("Error: ", ex);
-		}
+        try{
+            appMain(username, password);
+        }
+        catch (std::exception& ex){
+            utils::writeln("Error: ", ex);
+        }
     }
 
     return 0;
