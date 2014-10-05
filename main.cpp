@@ -28,8 +28,8 @@ T readFrom(S& stream)
 void appMain(std::string const & usrName, std::string const & passwd)
 {
     utils::write("Problem number ----- ");
-    const unsigned int pId = readFrom<unsigned int>(std::cin);
-    auto p_opt = inout::get_problem_from_test_server(pId);
+    auto pId = readFrom<std::string>(std::cin);
+    auto p_opt = inout::get_problem("localhost", pId);
 
     PROCON_ENFORCE(p_opt, "Fail: download ppm file");
 
@@ -73,7 +73,7 @@ void appMain(std::string const & usrName, std::string const & passwd)
                 utils::writeln(text.str());
 
                 utils::writeln("Sending");
-                // PROCON_ENFORCE(inout::send_result_to_test_server(pId, usrName, passwd, text.str()), "Fail: sending an answer");
+                PROCON_ENFORCE(inout::SendStatus::success == inout::send_result("localhost", "1", pId, ss), "Fail: sending an answer");
             }catch(std::exception& ex){
                 utils::writeln(ex);
             }
