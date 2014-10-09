@@ -25,11 +25,11 @@ T readFrom(S& stream)
 }
 
 
-void appMain(std::string const & usrName, std::string const & passwd)
+void appMain(std::string const & svrAddr, std::string const & tmToken)
 {
-    utils::write("Problem number ----- ");
+    utils::write("Problem ID(ex. `03`) ----- ");
     auto pId = readFrom<std::string>(std::cin);
-    auto p_opt = inout::get_problem("localhost", pId);
+    auto p_opt = inout::get_problem(svrAddr, pId);
 
     PROCON_ENFORCE(p_opt, "Fail: download ppm file");
 
@@ -48,7 +48,6 @@ void appMain(std::string const & usrName, std::string const & passwd)
     const auto change_cost = pb.change_cost();
     const auto max_select_times = pb.max_select_times();
 
-
     auto idxs = blocked_guess::guess(pb, pred);
     auto after = modify::modify_guess_image(idxs, pb,
         [=](std::vector<std::vector<utils::ImageID>> const & imgMap)
@@ -65,15 +64,11 @@ void appMain(std::string const & usrName, std::string const & passwd)
                 utils::writeln("]");
 
                 auto ss = greedy_calc_exchange::greedy_calc_exchange(imgMap, select_cost, change_cost, max_select_times);
-                std::stringstream text;
-                for(auto& e: ss){
-                    text << e;
-                    text << "\r\n";     // std::endlじゃなくて\r\n
-                }
-                utils::writeln(text.str());
+                for(auto& e: ss)
+                    utils::writeln(e);
 
                 utils::writeln("Sending");
-                PROCON_ENFORCE(inout::SendStatus::success == inout::send_result("localhost", "1", pId, ss), "Fail: sending an answer");
+                PROCON_ENFORCE(inout::SendStatus::success == inout::send_result(svrAddr, tmToken, pId, ss), "Fail: sending an answer");
             }catch(std::exception& ex){
                 utils::writeln(ex);
             }
@@ -83,12 +78,12 @@ void appMain(std::string const & usrName, std::string const & passwd)
 
 int main()
 {
-    const auto username = "k3kaimu";
-    const auto password = "k3foobar";
+    const auto svrAddr = "localhost";       // http://{svrAddr}/SubmitAnswer
+    const auto tmToken = "1";               // team token
 
     while(1){
         try{
-            appMain(username, password);
+            appMain(svrAddr, tmToken);
         }
         catch (std::exception& ex){
             utils::writeln("Error: ", ex);
