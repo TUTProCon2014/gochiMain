@@ -80,6 +80,7 @@ int main()
 {
     const auto svrAddr = "localhost";       // http://{svrAddr}/SubmitAnswer
     const auto tmToken = "1";               // team token
+    // const auto tmToken = "1729493439";
 
     while(1){
         try{
