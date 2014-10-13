@@ -1,0 +1,1 @@
+g++ -O3 -rdynamic -std=c++1y prac_main.cpp -o app `pkg-config --cflags --libs opencv`
