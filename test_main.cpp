@@ -7,8 +7,9 @@
 #include "../inout/include/inout.hpp"
 #include "../guess_img/include/bfs_guess.hpp"
 #include "../guess_img/include/blocked_guess.hpp"
+#include "../guess_img/include/correlation.hpp"
 #include "../modify_guess_image/modify_guess_image.hpp"
-#include "../calc_exchange/include/greedy_calc_exchange.hpp"
+#include "../calc_exchange/include/line_greedy_calc_exchange.hpp"
 #include "../utils/include/image.hpp"
 #include "../utils/include/dwrite.hpp"
 #include "../utils/include/exception.hpp"
@@ -36,12 +37,7 @@ void appMain(std::string const & usrName, std::string const & passwd)
     const utils::Problem& pb = *p_opt;
 
 
-    auto pred = [&](utils::Image const & img1,
-                    utils::Image const & img2,
-                    utils::Direction dir)
-    {
-        return bfs_guess::diff_connection(img1, img2, dir);
-    };
+    auto pred = guess::Correlator(pb);
 
 
     const auto select_cost = pb.select_cost();
@@ -73,7 +69,7 @@ void appMain(std::string const & usrName, std::string const & passwd)
                 utils::writeln(text.str());
 
                 utils::writeln("Sending");
-                // PROCON_ENFORCE(inout::send_result_to_test_server(pId, usrName, passwd, text.str()), "Fail: sending an answer");
+                //PROCON_ENFORCE(inout::send_result_to_test_server(pId, usrName, passwd, text.str()), "Fail: sending an answer");
             }catch(std::exception& ex){
                 utils::writeln(ex);
             }
