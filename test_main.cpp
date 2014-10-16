@@ -60,7 +60,7 @@ void appMain(std::string const & usrName, std::string const & passwd)
                 }
                 utils::writeln("]");
 
-                auto ss = greedy_calc_exchange::greedy_calc_exchange(imgMap, select_cost, change_cost, max_select_times);
+                auto ss = line_greedy_calc_exchange::line_greedy_calc_exchange(imgMap, select_cost, change_cost, max_select_times);
                 std::stringstream text;
                 for(auto& e: ss){
                     text << e;
