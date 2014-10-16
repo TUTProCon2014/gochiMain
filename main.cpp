@@ -9,7 +9,9 @@
 #include "../guess_img/include/blocked_guess.hpp"
 #include "../guess_img/include/correlation.hpp"
 #include "../modify_guess_image/modify_guess_image.hpp"
-#include "../calc_exchange/include/greedy_calc_exchange.hpp"
+#include "../calc_exchange/include/calc_exchange.hpp"
+#include "../calc_exchange/include/line_greedy_calc_exchange.hpp"
+#include "../calc_exchange/include/calc_cost.hpp"
 #include "../utils/include/image.hpp"
 #include "../utils/include/dwrite.hpp"
 #include "../utils/include/exception.hpp"
@@ -36,7 +38,6 @@ void appMain(std::string const & svrAddr, std::string const & tmToken)
 
     const utils::Problem& pb = *p_opt;
 
-
     auto pred = guess::Correlator(pb);
 
 
@@ -44,9 +45,46 @@ void appMain(std::string const & svrAddr, std::string const & tmToken)
     const auto change_cost = pb.change_cost();
     const auto max_select_times = pb.max_select_times();
 
-    auto idxs = blocked_guess::guess(pb, pred);
+    const auto idxs = blocked_guess::guess(pb, pred);
+
+    // A*とgreedyをまず投げる
+    auto thFirst = std::thread([&](){
+        auto a_star = std::async(std::launch::async,
+                                [&](){ return calc_exchange::calc_exchange(idxs, select_cost, change_cost, max_select_times); });
+        auto greedy = std::async(std::launch::async,
+                                [&](){ return line_greedy_calc_exchange::line_greedy_calc_exchange
+                                                (idxs, select_cost, change_cost, max_select_times); });
+
+        greedy.wait();
+
+        auto firstAns = [&](){
+            auto st = a_star.wait_for(std::chrono::seconds(2));
+            if(st == std::future_status::ready){
+                auto res = greedy.get();
+                utils::collectException<std::runtime_error>([&](){ return a_star.get(); })
+                .onSuccess([&](std::vector<std::string> const & as_res){
+                    if (calc_exchange::calc_cost(res, select_cost, change_cost)
+                        > calc_exchange::calc_cost(as_res, select_cost, change_cost)){
+                        res = as_res;
+                        utils::writeln("A*");
+                    }
+                });
+
+                return res;
+            }else
+                return greedy.get();
+        }();
+
+        for(auto& e: firstAns)
+            utils::writeln(e);
+
+        utils::writeln("Sending");
+        PROCON_ENFORCE(inout::SendStatus::success == inout::send_result(svrAddr, tmToken, pId, firstAns), "Fail: sending an answer");
+    });
+
+
     auto after = modify::modify_guess_image(idxs, pb,
-        [=](std::vector<std::vector<utils::ImageID>> const & imgMap)
+        [&](std::vector<std::vector<utils::ImageID>> const & imgMap)
         {
             try{
                 std::cout << std::dec;
@@ -59,7 +97,7 @@ void appMain(std::string const & svrAddr, std::string const & tmToken)
                 }
                 utils::writeln("]");
 
-                auto ss = greedy_calc_exchange::greedy_calc_exchange(imgMap, select_cost, change_cost, max_select_times);
+                auto ss = line_greedy_calc_exchange::line_greedy_calc_exchange(imgMap, select_cost, change_cost, max_select_times);
                 for(auto& e: ss)
                     utils::writeln(e);
 
@@ -69,6 +107,8 @@ void appMain(std::string const & svrAddr, std::string const & tmToken)
                 utils::writeln(ex);
             }
         });
+
+    thFirst.join();
 }
 
 
