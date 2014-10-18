@@ -114,9 +114,8 @@ void appMain(std::string const & svrAddr, std::string const & tmToken)
 
 int main()
 {
-    const auto svrAddr = "localhost";       // http://{svrAddr}/SubmitAnswer
-    const auto tmToken = "1";               // team token
-    // const auto tmToken = "1729493439";
+    const auto svrAddr = "172.16.1.2";      // http://{svrAddr}/SubmitAnswer
+    const auto tmToken = "1729493439";
 
     while(1){
         try{
